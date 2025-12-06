@@ -36,12 +36,13 @@
 4. **Write** your code
 5. **Run** with one click
 6. **See** live results instantly!
+7. **Remember** Its Heavy web-app it will take upto 1 mint in url. So **Download** the file and open in your local pc **Browser**.
 
 ### 🎮 **How to Use**
 
 ```bash
 # Clone or download the repository
-git clone https://github.com/yourusername/codeplay-compiler.git
+git clone https://github.com/DevBadshah/codeplay-compiler.git
 
 # Simply open the HTML file in browser
 open codeplay.html
