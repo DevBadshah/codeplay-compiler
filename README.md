@@ -36,7 +36,7 @@
 4. **Write** your code
 5. **Run** with one click
 6. **See** live results instantly!
-7. **Remember** Its Heavy web-app it will take upto 1 mint in url. So **Download** the file and open in your local pc **Browser**.
+7. **Remember** Its Heavy web-app it will take upto 1 mint in url to load. So **Download** the file and open in your local pc **Browser**.
 
 ### 🎮 **How to Use**
 
