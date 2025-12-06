@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodePlay | All-in-One Compiler | SiteArche</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --dark: #1e293b;
+            --darker: #0f172a;
+            --light: #f8fafc;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --code-bg: #1a1b26;
+            --sidebar-bg: #0f172a;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'JetBrains Mono', monospace;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-icon {
+            background: var(--primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .logo-text h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #60a5fa, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .logo-text p {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .run-btn {
+            background: linear-gradient(90deg, var(--success), #34d399);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+        }
+        
+        .run-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        /* Main Layout */
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 80px);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: var(--sidebar-bg);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+        }
+        
+        .language-selector h3 {
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .language-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .lang-btn {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            transition: all 0.3s;
+        }
+        
+        .lang-btn:hover {
+            background: rgba(37, 99, 235, 0.2);
+            border-color: var(--primary);
+        }
+        
+        .lang-btn.active {
+            background: rgba(37, 99, 235, 0.3);
+            border-color: var(--primary);
+            color: #60a5fa;
+        }
+        
+        .lang-icon {
+            font-size: 1.2rem;
+        }
+        
+        .version-info {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        
+        /* Editor Area */
+        .editor-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            padding: 1.5rem;
+            height: calc(100vh - 80px);
+        }
+        
+        .editor-container, .preview-container {
+            display: flex;
+            flex-direction: column;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+        
+        .editor-header, .preview-header {
+            background: rgba(30, 41, 59, 0.9);
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .editor-header h3, .preview-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #e2e8f0;
+        }
+        
+        .editor-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #cbd5e1;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .code-editor {
+            flex: 1;
+            background: var(--code-bg);
+            color: #e2e8f0;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border: none;
+            outline: none;
+            resize: none;
+            overflow-y: auto;
+        }
+        
+        .code-editor::selection {
+            background: rgba(37, 99, 235, 0.3);
+        }
+        
+        .preview-content {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background: white;
+            color: #1e293b;
+        }
+        
+        /* Language-specific highlighting */
+        .html-code { color: #e34c26; }
+        .css-code { color: #264de4; }
+        .js-code { color: #f0db4f; }
+        .php-code { color: #777bb4; }
+        .python-code { color: #3776ab; }
+        
+        /* Console */
+        .console {
+            background: #1a1b26;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .console-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .console-output {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .log {
+            padding: 0.3rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log.success { color: #10b981; }
+        .log.error { color: #ef4444; }
+        .log.info { color: #60a5fa; }
+        .log.warning { color: #f59e0b; }
+        
+        /* Footer */
+        footer {
+            background: rgba(15, 23, 42, 0.95);
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 2rem;
+        }
+        
+        .branding {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .branding h3 {
+            background: linear-gradient(90deg, #60a5fa, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .country-flag {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 200px 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            
+            .editor-area {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr 1fr;
+                height: auto;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-code"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>CodePlay</h1>
+                    <p>All-in-One Code Compiler & Playground</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="run-btn" id="runBtn">
+                    <i class="fas fa-play"></i>
+                    Run Code
+                </button>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="language-selector">
+                    <h3><i class="fas fa-code"></i> Languages</h3>
+                    <div class="language-list" id="languageList">
+                        <!-- Languages will be populated by JS -->
+                    </div>
+                </div>
+                
+                <div class="version-info">
+                    <p><strong>Powered by:</strong></p>
+                    <p>• Pyodide (Python 3.10)</p>
+                    <p>• Babel (JavaScript ES6+)</p>
+                    <p>• Live HTML/CSS/JS Execution</p>
+                    <p><br><strong>Version:</strong> 1.0.0</p>
+                </div>
+            </aside>
+            
+            <main class="editor-area">
+                <div class="editor-container">
+                    <div class="editor-header">
+                        <h3><i class="fas fa-edit"></i> Code Editor</h3>
+                        <div class="editor-actions">
+                            <button class="icon-btn" title="Clear" id="clearBtn">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button class="icon-btn" title="Format Code" id="formatBtn">
+                                <i class="fas fa-indent"></i>
+                            </button>
+                            <button class="icon-btn" title="Save Code" id="saveBtn">
+                                <i class="fas fa-save"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <textarea class="code-editor" id="codeEditor" spellcheck="false" placeholder="Write your code here..."></textarea>
+                    <div class="console">
+                        <div class="console-header">
+                            <h4><i class="fas fa-terminal"></i> Console Output</h4>
+                            <button class="icon-btn" id="clearConsole">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                        </div>
+                        <div class="console-output" id="consoleOutput">
+                            <div class="log info">// Console is ready. Write some code and click "Run Code"</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="preview-container">
+                    <div class="preview-header">
+                        <h3><i class="fas fa-eye"></i> Live Preview</h3>
+                        <div class="editor-actions">
+                            <button class="icon-btn" title="Refresh Preview" id="refreshPreview">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="preview-content" id="previewContent">
+                        <div style="text-align: center; padding: 3rem; color: #666;">
+                            <i class="fas fa-code" style="font-size: 3rem; margin-bottom: 1rem; color: #ccc;"></i>
+                            <h3 style="color: #333;">Live Preview</h3>
+                            <p style="color: #666;">Your output will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        
+        <footer>
+            <div class="branding">
+                <h3>CodePlay</h3>
+                <p>All-in-One Programming Languages Compiler Tool</p>
+                <div class="country-flag">
+                    <i class="fas fa-heart" style="color: #ef4444;"></i>
+                    <span>Created by <strong>DevBadshah</strong> | <strong>SiteArche.com</strong></span>
+                    <i class="fas fa-flag" style="color: #06D6A0;"></i>
+                    <span>Made in Pakistan for Everyone</span>
+                    <i class="fas fa-code" style="color: #2563eb;"></i>
+                    <span>Free & Open Source</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Pyodide
+        let pyodide;
+        async function loadPyodide() {
+            try {
+                pyodide = await loadPyodide();
+                console.log("Pyodide loaded successfully");
+                addConsoleLog("Python runtime loaded successfully", "success");
+            } catch (error) {
+                console.error("Failed to load Pyodide:", error);
+                addConsoleLog("Python runtime failed to load", "error");
+            }
+        }
+        
+        // Load Pyodide on startup
+        loadPyodide();
+        
+        // Programming languages data
+        const languages = [
+            { id: 'html', name: 'HTML5', icon: 'fab fa-html5', color: '#e34c26', defaultCode: `<!DOCTYPE html>
+<html>
+<head>
+    <title>My Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>Hello World! 🌍</h1>
+            <p>Welcome to CodePlay Compiler</p>
+            <p>Edit this HTML code and see live changes!</p>
+            <button onclick="alert('Hello from CodePlay!')">Click Me</button>
+        </div>
+    </div>
+</body>
+</html>` },
+            { id: 'css', name: 'CSS3', icon: 'fab fa-css3-alt', color: '#264de4', defaultCode: `/* Welcome to CSS Playground */
+body {
+    margin: 0;
+    padding: 40px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    max-width: 600px;
+    width: 100%;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.title {
+    color: #333;
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    color: #666;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+}
+
+.button {
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.1em;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.code-block {
+    background: #1a1b26;
+    color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 30px;
+    font-family: 'Courier New', monospace;
+    text-align: left;
+}` },
+            { id: 'js', name: 'JavaScript', icon: 'fab fa-js', color: '#f0db4f', defaultCode: `// JavaScript Playground
+console.log("Welcome to CodePlay JavaScript Compiler!");
+
+// DOM Manipulation Example
+document.body.innerHTML = '';
+document.body.style.cssText = \`
+    margin: 0;
+    padding: 40px;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+\`;
+
+const container = document.createElement('div');
+container.className = 'container';
+container.innerHTML = \`
+    <div class="card">
+        <h1>JavaScript Output</h1>
+        <p id="demo">Click the button to see magic! ✨</p>
+        <button id="magicBtn" class="btn">Show Magic</button>
+        <button id="countBtn" class="btn">Count: 0</button>
+        <div id="output" style="margin-top: 20px;"></div>
+    </div>
+\`;
+
+// Add CSS
+const style = document.createElement('style');
+style.textContent = \`
+    .container { max-width: 600px; width: 100%; }
+    .card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 40px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        text-align: center;
+    }
+    .btn {
+        background: #4cc9f0;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        margin: 10px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: all 0.3s;
+    }
+    .btn:hover {
+        background: #3aa8d8;
+        transform: translateY(-2px);
+    }
+\`;
+
+document.head.appendChild(style);
+document.body.appendChild(container);
+
+// Interactive functionality
+let count = 0;
+
+document.getElementById('magicBtn').addEventListener('click', function() {
+    const demo = document.getElementById('demo');
+    demo.textContent = '🎉 JavaScript is working perfectly! 🎉';
+    demo.style.color = '#4cc9f0';
+    demo.style.fontSize = '1.2em';
+    demo.style.transition = 'all 0.3s';
+    
+    // Create floating elements
+    for(let i = 0; i < 20; i++) {
+        const star = document.createElement('div');
+        star.innerHTML = '✨';
+        star.style.position = 'absolute';
+        star.style.left = Math.random() * 100 + 'vw';
+        star.style.top = Math.random() * 100 + 'vh';
+        star.style.fontSize = Math.random() * 20 + 10 + 'px';
+        star.style.opacity = '0';
+        star.style.animation = \`float \${Math.random() * 2 + 1}s ease-in-out infinite\`;
+        document.body.appendChild(star);
+        
+        // Animate
+        setTimeout(() => {
+            star.style.opacity = '1';
+            star.style.transition = 'opacity 0.5s';
+        }, 10);
+        
+        // Remove after animation
+        setTimeout(() => {
+            star.style.opacity = '0';
+            setTimeout(() => star.remove(), 500);
+        }, 2000);
+    }
+});
+
+document.getElementById('countBtn').addEventListener('click', function() {
+    count++;
+    this.textContent = \`Count: \${count}\`;
+    this.style.background = count % 2 === 0 ? '#f72585' : '#4cc9f0';
+    
+    const output = document.getElementById('output');
+    const item = document.createElement('div');
+    item.textContent = \`Clicked \${count} times\`;
+    item.style.padding = '5px';
+    item.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+    output.appendChild(item);
+});
+
+// Add animation style
+const animationStyle = document.createElement('style');
+animationStyle.textContent = \`
+    @keyframes float {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+    }
+\`;
+document.head.appendChild(animationStyle);
+
+console.log("JavaScript execution complete!");` },
+            { id: 'python', name: 'Python', icon: 'fab fa-python', color: '#3776ab', defaultCode: `# Welcome to Python Playground
+print("🌟 Welcome to CodePlay Python Compiler! 🌟")
+print("This Python code runs in your browser using Pyodide")
+print()
+
+# Basic Python Operations
+print("=== Basic Operations ===")
+x = 10
+y = 20
+print(f"x + y = {x + y}")
+print(f"x * y = {x * y}")
+print()
+
+# List Operations
+print("=== List Operations ===")
+fruits = ["Apple", "Banana", "Cherry", "Date"]
+print("Fruits list:", fruits)
+print("First fruit:", fruits[0])
+print("Last fruit:", fruits[-1])
+print()
+
+# Dictionary Example
+print("=== Dictionary Example ===")
+person = {
+    "name": "DevBadshah",
+    "country": "Pakistan",
+    "role": "Developer",
+    "tools": ["HTML", "CSS", "JS", "Python"]
+}
+print("Person:", person)
+print(f"Name: {person['name']}")
+print(f"From: {person['country']}")
+print()
+
+# Function Example
+print("=== Function Example ===")
+def fibonacci(n):
+    """Generate Fibonacci sequence"""
+    sequence = [0, 1]
+    while len(sequence) < n:
+        sequence.append(sequence[-1] + sequence[-2])
+    return sequence[:n]
+
+fib_10 = fibonacci(10)
+print(f"First 10 Fibonacci numbers: {fib_10}")
+print()
+
+# Math Operations
+print("=== Math Operations ===")
+import math
+numbers = [1, 4, 9, 16, 25]
+print("Numbers:", numbers)
+print("Square roots:", [math.sqrt(n) for n in numbers])
+print("Pi:", math.pi)
+print()
+
+# Pattern Generation
+print("=== Pattern Generation ===")
+for i in range(1, 6):
+    print('*' * i + ' ' * (10 - i * 2) + '*' * i)
+print()
+
+print("✨ Python execution completed successfully! ✨")
+print("Made with ❤️ in Pakistan by SiteArche.com")` },
+            { id: 'php', name: 'PHP', icon: 'fab fa-php', color: '#777bb4', defaultCode: `<?php
+// Welcome to PHP Playground
+echo "<!DOCTYPE html>";
+echo "<html>";
+echo "<head>";
+echo "    <title>PHP Output</title>";
+echo "    <style>";
+echo "        body {";
+echo "            font-family: Arial, sans-serif;";
+echo "            padding: 40px;";
+echo "            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);";
+echo "            color: white;";
+echo "            min-height: 100vh;";
+echo "        }";
+echo "        .container {";
+echo "            max-width: 800px;";
+echo "            margin: 0 auto;";
+echo "            background: rgba(255, 255, 255, 0.1);";
+echo "            padding: 30px;";
+echo "            border-radius: 15px;";
+echo "            backdrop-filter: blur(10px);";
+echo "        }";
+echo "        h1 {";
+echo "            color: #4cc9f0;";
+echo "            border-bottom: 2px solid #4cc9f0;";
+echo "            padding-bottom: 10px;";
+echo "        }";
+echo "        .info-box {";
+echo "            background: rgba(76, 201, 240, 0.1);";
+echo "            padding: 15px;";
+echo "            border-radius: 10px;";
+echo "            margin: 15px 0;";
+echo "        }";
+echo "    </style>";
+echo "</head>";
+echo "<body>";
+echo "    <div class='container'>";
+echo "        <h1>🔄 PHP Code Execution</h1>";
+echo "        <div class='info-box'>";
+echo "            <p><strong>✨ Welcome to PHP Compiler!</strong></p>";
+echo "            <p>This PHP code is executing in your browser</p>";
+echo "        </div>";
+
+// PHP Code Execution
+echo "<div class='info-box'>";
+echo "<h3>🔢 Basic PHP Operations</h3>";
+
+// Variables and calculations
+$number1 = 42;
+$number2 = 58;
+$sum = $number1 + $number2;
+$product = $number1 * $number2;
+
+echo "<p>Number 1: $number1</p>";
+echo "<p>Number 2: $number2</p>";
+echo "<p>Sum: $sum</p>";
+echo "<p>Product: $product</p>";
+
+// Date and time
+echo "<p>📅 Current Date: " . date('Y-m-d') . "</p>";
+echo "<p>⏰ Current Time: " . date('H:i:s') . "</p>";
+
+echo "</div>";
+
+// Array demonstration
+echo "<div class='info-box'>";
+echo "<h3>📋 Array Operations</h3>";
+
+$languages = ["PHP", "JavaScript", "Python", "HTML", "CSS", "SQL"];
+echo "<p>Programming Languages:</p>";
+echo "<ul>";
+foreach ($languages as $language) {
+    echo "<li>$language</li>";
+}
+echo "</ul>";
+
+echo "</div>";
+
+// Function demonstration
+echo "<div class='info-box'>";
+echo "<h3>⚙️ Function Example</h3>";
+
+function calculateCircleArea($radius) {
+    return round(pi() * $radius * $radius, 2);
+}
+
+$radius = 7;
+$area = calculateCircleArea($radius);
+echo "<p>Circle with radius $radius has area: $area</p>";
+
+echo "</div>";
+
+// Server info (simulated)
+echo "<div class='info-box'>";
+echo "<h3>🔧 Server Information</h3>";
+echo "<p>PHP Version: 8.1 (Simulated)</p>";
+echo "<p>Server: CodePlay Browser Engine</p>";
+echo "</div>";
+
+echo "<div style='text-align: center; margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px;'>";
+echo "<p>🚀 PHP execution completed successfully!</p>";
+echo "<p>Made with ❤️ in Pakistan by <strong>SiteArche.com</strong></p>";
+echo "</div>";
+
+echo "    </div>";
+echo "</body>";
+echo "</html>";
+?>` }
+        ];
+
+        // Current state
+        let currentLanguage = 'html';
+        let autoRunTimeout = null;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeLanguages();
+            setupEventListeners();
+            loadSavedCode();
+            
+            // Add initial console log
+            addConsoleLog("🚀 CodePlay Compiler initialized successfully!", "success");
+            addConsoleLog("Select a language and start coding!", "info");
+        });
+
+        // Initialize language list
+        function initializeLanguages() {
+            const languageList = document.getElementById('languageList');
+            languages.forEach(lang => {
+                const btn = document.createElement('button');
+                btn.className = 'lang-btn';
+                btn.innerHTML = `
+                    <i class="${lang.icon} lang-icon" style="color: ${lang.color}"></i>
+                    <span>${lang.name}</span>
+                `;
+                btn.dataset.lang = lang.id;
+                btn.addEventListener('click', () => switchLanguage(lang.id));
+                languageList.appendChild(btn);
+            });
+            
+            // Activate first language
+            switchLanguage('html');
+        }
+
+        // Switch between languages
+        function switchLanguage(langId) {
+            // Update UI
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === langId);
+            });
+            
+            // Update editor
+            const lang = languages.find(l => l.id === langId);
+            currentLanguage = langId;
+            
+            const editor = document.getElementById('codeEditor');
+            const savedCode = localStorage.getItem(`code_${langId}`);
+            
+            if (savedCode) {
+                editor.value = savedCode;
+            } else {
+                editor.value = lang.defaultCode;
+            }
+            
+            // Update syntax highlighting
+            updateSyntaxHighlighting();
+            
+            // Run code automatically for HTML
+            if (langId === 'html') {
+                runCode();
+            }
+            
+            addConsoleLog(`Switched to ${lang.name}`, "info");
+        }
+
+        // Update syntax highlighting in editor
+        function updateSyntaxHighlighting() {
+            const editor = document.getElementById('codeEditor');
+            editor.className = `code-editor ${currentLanguage}-code`;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Run button
+            document.getElementById('runBtn').addEventListener('click', runCode);
+            
+            // Clear button
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                document.getElementById('codeEditor').value = '';
+                addConsoleLog("Editor cleared", "warning");
+            });
+            
+            // Format button
+            document.getElementById('formatBtn').addEventListener('click', formatCode);
+            
+            // Save button
+            document.getElementById('saveBtn').addEventListener('click', saveCode);
+            
+            // Clear console
+            document.getElementById('clearConsole').addEventListener('click', () => {
+                document.getElementById('consoleOutput').innerHTML = '';
+                addConsoleLog("Console cleared", "warning");
+            });
+            
+            // Refresh preview
+            document.getElementById('refreshPreview').addEventListener('click', runCode);
+            
+            // Auto-run on code change (debounced)
+            document.getElementById('codeEditor').addEventListener('input', function() {
+                clearTimeout(autoRunTimeout);
+                autoRunTimeout = setTimeout(() => {
+                    if (currentLanguage === 'html') {
+                        runCode();
+                    }
+                    // Save code automatically
+                    saveCode(true);
+                }, 1000);
+            });
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    runCode();
+                }
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    saveCode();
+                }
+                if (e.ctrlKey && e.key === 'l') {
+                    e.preventDefault();
+                    document.getElementById('codeEditor').value = '';
+                }
+            });
+        }
+
+        // Main code execution function
+        async function runCode() {
+            const code = document.getElementById('codeEditor').value;
+            const consoleOutput = document.getElementById('consoleOutput');
+            const previewContent = document.getElementById('previewContent');
+            
+            // Clear previous output
+            consoleOutput.innerHTML = '';
+            
+            addConsoleLog(`Running ${currentLanguage.toUpperCase()} code...`, "info");
+            
+            try {
+                switch(currentLanguage) {
+                    case 'html':
+                        executeHTML(code);
+                        break;
+                    case 'css':
+                        executeCSS(code);
+                        break;
+                    case 'js':
+                        executeJavaScript(code);
+                        break;
+                    case 'python':
+                        await executePython(code);
+                        break;
+                    case 'php':
+                        executePHP(code);
+                        break;
+                }
+                addConsoleLog("✅ Code executed successfully!", "success");
+            } catch (error) {
+                addConsoleLog(`❌ Error: ${error.message}`, "error");
+                console.error("Execution error:", error);
+            }
+        }
+
+        // Execute HTML code
+        function executeHTML(code) {
+            const previewContent = document.getElementById('previewContent');
+            previewContent.innerHTML = code;
+            
+            // Extract and execute any inline JavaScript
+            const scripts = previewContent.querySelectorAll('script');
+            scripts.forEach(script => {
+                try {
+                    eval(script.textContent);
+                } catch (e) {
+                    addConsoleLog(`Script error: ${e.message}`, "error");
+                }
+            });
+        }
+
+        // Execute CSS code
+        function executeCSS(code) {
+            const previewContent = document.getElementById('previewContent');
+            previewContent.innerHTML = `
+                <div class="css-preview">
+                    <style>${code}</style>
+                    <div class="preview-container">
+                        <h1>CSS Output Preview</h1>
+                        <div class="styled-box">
+                            <p>This is styled by your CSS code</p>
+                            <button class="styled-button">Hover Me</button>
+                            <div class="grid-example">
+                                <div class="grid-item">1</div>
+                                <div class="grid-item">2</div>
+                                <div class="grid-item">3</div>
+                                <div class="grid-item">4</div>
+                            </div>
+                        </div>
+                        <div class="code-display">
+                            <pre><code>${escapeHtml(code)}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add default CSS for preview
+            const defaultStyle = document.createElement('style');
+            defaultStyle.textContent = `
+                .css-preview { font-family: 'Segoe UI', sans-serif; }
+                .preview-container { padding: 30px; }
+                .styled-box { 
+                    padding: 20px; 
+                    margin: 20px 0; 
+                    border-radius: 10px; 
+                    background: white; 
+                    color: #333;
+                }
+                .styled-button {
+                    padding: 10px 20px;
+                    background: #4cc9f0;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    margin: 10px 0;
+                }
+                .grid-example {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 10px;
+                    margin-top: 20px;
+                }
+                .grid-item {
+                    padding: 20px;
+                    background: #f0f0f0;
+                    text-align: center;
+                    border-radius: 5px;
+                }
+                .code-display {
+                    background: #1a1b26;
+                    color: #fff;
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin-top: 20px;
+                    font-family: 'Courier New', monospace;
+                }
+            `;
+            previewContent.querySelector('.css-preview').appendChild(defaultStyle);
+        }
+
+        // Execute JavaScript code
+        function executeJavaScript(code) {
+            const previewContent = document.getElementById('previewContent');
+            previewContent.innerHTML = `
+                <div id="js-output"></div>
+                <style>
+                    #js-output {
+                        padding: 20px;
+                        font-family: 'Segoe UI', sans-serif;
+                    }
+                </style>
+            `;
+            
+            try {
+                const log = console.log;
+                const warn = console.warn;
+                const error = console.error;
+                
+                // Override console methods to capture output
+                console.log = function(...args) {
+                    addConsoleLog(args.join(' '), 'info');
+                    log.apply(console, args);
+                };
+                
+                console.warn = function(...args) {
+                    addConsoleLog(`⚠️ ${args.join(' ')}`, 'warning');
+                    warn.apply(console, args);
+                };
+                
+                console.error = function(...args) {
+                    addConsoleLog(`❌ ${args.join(' ')}`, 'error');
+                    error.apply(console, args);
+                };
+                
+                // Execute the code
+                eval(code);
+                
+                // Restore console methods
+                console.log = log;
+                console.warn = warn;
+                console.error = error;
+                
+            } catch (e) {
+                addConsoleLog(`JavaScript Error: ${e.message}`, "error");
+            }
+        }
+
+        // Execute Python code
+        async function executePython(code) {
+            if (!pyodide) {
+                addConsoleLog("Loading Python runtime...", "info");
+                await loadPyodide();
+            }
+            
+            const previewContent = document.getElementById('previewContent');
+            previewContent.innerHTML = `
+                <div class="python-output">
+                    <h3>🐍 Python Output</h3>
+                    <div id="python-console"></div>
+                </div>
+                <style>
+                    .python-output {
+                        padding: 20px;
+                        background: #1a1b26;
+                        color: #fff;
+                        border-radius: 10px;
+                        font-family: 'Courier New', monospace;
+                        min-height: 100%;
+                    }
+                    #python-console {
+                        margin-top: 20px;
+                        white-space: pre-wrap;
+                        word-break: break-word;
+                    }
+                </style>
+            `;
+            
+            try {
+                // Capture Python output
+                pyodide.runPython(`
+                import sys
+                import io
+                sys.stdout = io.StringIO()
+                `);
+                
+                // Run user code
+                pyodide.runPython(code);
+                
+                // Get the output
+                const output = pyodide.runPython("sys.stdout.getvalue()");
+                
+                // Display output
+                document.getElementById('python-console').textContent = output;
+                
+                // Also add to console
+                addConsoleLog(`Python Output: ${output.substring(0, 100)}...`, "info");
+                
+            } catch (e) {
+                addConsoleLog(`Python Error: ${e.message}`, "error");
+                document.getElementById('python-console').textContent = `Error: ${e.message}`;
+            }
+        }
+
+        // Execute PHP code
+        function executePHP(code) {
+            const previewContent = document.getElementById('previewContent');
+            
+            // Extract PHP output (simulated)
+            const phpOutput = simulatePHPExecution(code);
+            
+            previewContent.innerHTML = phpOutput;
+            
+            // Also execute any JavaScript in the output
+            const scripts = previewContent.querySelectorAll('script');
+            scripts.forEach(script => {
+                try {
+                    eval(script.textContent);
+                } catch (e) {
+                    addConsoleLog(`PHP Script Error: ${e.message}`, "error");
+                }
+            });
+        }
+
+        // Simulate PHP execution (since we can't run actual PHP in browser)
+        function simulatePHPExecution(code) {
+            // Extract echo statements and other output
+            const echoMatches = code.match(/echo\s+["']([^"']+)["']/g) || [];
+            const output = echoMatches.map(match => 
+                match.replace(/echo\s+["']/, '').replace(/["']/, '')
+            ).join('<br>');
+            
+            return `
+                <div class="php-output">
+                    <h3>🐘 PHP Output (Simulated)</h3>
+                    <div class="output">
+                        ${output || 'No echo output detected'}
+                    </div>
+                    <div class="info">
+                        <p><strong>Note:</strong> This is a simulated PHP execution.</p>
+                        <p>Real PHP requires server-side processing.</p>
+                    </div>
+                </div>
+                <style>
+                    .php-output {
+                        padding: 30px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        min-height: 100%;
+                        font-family: 'Segoe UI', sans-serif;
+                    }
+                    .output {
+                        background: rgba(255, 255, 255, 0.1);
+                        padding: 20px;
+                        border-radius: 10px;
+                        margin: 20px 0;
+                        backdrop-filter: blur(10px);
+                    }
+                    .info {
+                        background: rgba(255, 255, 255, 0.05);
+                        padding: 15px;
+                        border-radius: 10px;
+                        font-size: 0.9em;
+                    }
+                </style>
+            `;
+        }
+
+        // Format code
+        function formatCode() {
+            const editor = document.getElementById('codeEditor');
+            const code = editor.value;
+            
+            try {
+                switch(currentLanguage) {
+                    case 'html':
+                    case 'css':
+                    case 'js':
+                        // Simple formatting
+                        let formatted = code
+                            .replace(/\s+/g, ' ')
+                            .replace(/([{};])/g, '$1\n')
+                            .replace(/\n\s*\n/g, '\n');
+                        editor.value = formatted;
+                        break;
+                }
+                addConsoleLog("Code formatted", "success");
+            } catch (e) {
+                addConsoleLog("Formatting failed", "error");
+            }
+        }
+
+        // Save code to localStorage
+        function saveCode(silent = false) {
+            const code = document.getElementById('codeEditor').value;
+            localStorage.setItem(`code_${currentLanguage}`, code);
+            if (!silent) {
+                addConsoleLog("Code saved locally", "success");
+            }
+        }
+
+        // Load saved code
+        function loadSavedCode() {
+            languages.forEach(lang => {
+                const saved = localStorage.getItem(`code_${lang.id}`);
+                if (saved) {
+                    console.log(`Loaded saved ${lang.name} code`);
+                }
+            });
+        }
+
+        // Add message to console
+        function addConsoleLog(message, type = 'info') {
+            const consoleOutput = document.getElementById('consoleOutput');
+            const log = document.createElement('div');
+            log.className = `log ${type}`;
+            log.innerHTML = `<span style="color: #94a3b8">${new Date().toLocaleTimeString()}</span> ${message}`;
+            consoleOutput.appendChild(log);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        // Utility function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Add animation for run button
+        document.getElementById('runBtn').addEventListener('mousedown', function() {
+            this.style.transform = 'scale(0.95)';
+        });
+        
+        document.getElementById('runBtn').addEventListener('mouseup', function() {
+            this.style.transform = '';
+        });
+    </script>
+</body>
+</html>
